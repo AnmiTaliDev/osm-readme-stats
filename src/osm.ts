@@ -93,7 +93,10 @@ async function fetchWindow(
     if (maxId !== null) url += `&max_id=${maxId}`;
 
     const res = await fetch(url, { headers: OSM_HEADERS });
-    if (!res.ok) throw new Error(`OSM changesets API ${res.status} user=${userId}`);
+    if (!res.ok) {
+      console.warn(`[fetchWindow] OSM ${res.status} user=${userId} timeParam=${timeParam}`);
+      break;
+    }
 
     const data = (await res.json()) as OsmApiChangesetsResponse;
     if (data.changesets.length === 0) break;
@@ -135,14 +138,18 @@ export async function getChangesets(userId: number, cutoffMs: number): Promise<O
     cursor = next;
   }
 
-  const perWindow = await Promise.all(
+  const settled = await Promise.allSettled(
     windows.map(w => fetchWindow(userId, w.start, w.end, cutoffMs)),
   );
 
   const seen = new Set<number>();
   const result: OsmChangeset[] = [];
-  for (const batch of perWindow) {
-    for (const cs of batch) {
+  for (const outcome of settled) {
+    if (outcome.status === 'rejected') {
+      console.warn('[getChangesets] window failed:', outcome.reason);
+      continue;
+    }
+    for (const cs of outcome.value) {
       if (!seen.has(cs.id)) {
         seen.add(cs.id);
         result.push(cs);
