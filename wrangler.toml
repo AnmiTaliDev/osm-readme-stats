@@ -1,0 +1,18 @@
+name = "osm-readme-stats"
+main = "src/index.ts"
+compatibility_date = "2024-10-22"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[routes]]
+pattern = "api.anmitali.dev/osm/*"
+zone_name = "anmitali.dev"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[build]
+command = "npm run type-check"

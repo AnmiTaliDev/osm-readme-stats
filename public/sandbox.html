@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OSM Stats Builder</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --border:  #30363d;
+      --text:    #c9d1d9;
+      --muted:   #8b949e;
+      --accent:  #58a6ff;
+      --radius:  6px;
+      --mono:    "SFMono-Regular", Consolas, monospace;
+      --sans:    "Segoe UI", system-ui, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 28px 24px 60px;
+    }
+
+    h1 { font-size: 20px; font-weight: 600; }
+    .sub { color: var(--muted); font-size: 13px; margin: 3px 0 28px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      max-width: 1100px;
+    }
+    @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+
+    /* Sidebar */
+    .sidebar { display: flex; flex-direction: column; gap: 14px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field > label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 13px;
+      padding: 6px 9px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input[type="text"]:focus, select:focus { border-color: var(--accent); }
+
+    .radio-row { display: flex; gap: 12px; margin-bottom: 7px; }
+    .radio-row label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; color: var(--text); }
+    input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); }
+
+    .check-row { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text); margin-bottom: 6px; }
+    .check-row:last-child { margin-bottom: 0; }
+
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .color-row { display: flex; gap: 6px; align-items: center; }
+    .color-row input[type="color"] {
+      width: 32px; height: 30px; padding: 2px;
+      border: 1px solid var(--border); border-radius: 4px;
+      background: var(--bg); cursor: pointer; flex-shrink: 0;
+    }
+    .color-row input[type="text"] { flex: 1; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+    .chip {
+      width: 16px; height: 16px; border-radius: 3px; cursor: pointer;
+      border: 2px solid transparent; flex-shrink: 0;
+      transition: transform .1s, border-color .1s;
+    }
+    .chip:hover { transform: scale(1.3); }
+    .chip.on { border-color: #e6edf3; }
+
+    .err { font-size: 11px; color: #f85149; margin-top: 3px; }
+    .hidden { display: none !important; }
+
+    /* Main content */
+    .content { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Heatmap hero */
+    .heatmap-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .heatmap-preview {
+      background: #f6f8fa;
+      min-height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .heatmap-preview img { max-width: 100%; display: block; }
+
+    .heatmap-outputs {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Badge row */
+    .badge-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .badge-preview {
+      min-width: 120px;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+    }
+    .badge-preview img { display: block; }
+
+    .badge-outputs { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+
+    /* Output field */
+    .out-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .out-row { display: flex; }
+    .out-code {
+      flex: 1;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-right: none;
+      border-radius: var(--radius) 0 0 var(--radius);
+      padding: 5px 9px;
+      word-break: break-all;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+    }
+    .copy {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: none;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 10px;
+      white-space: nowrap;
+      transition: color .12s, background .12s;
+    }
+    .copy:hover { color: var(--accent); }
+    .copy.ok { color: #3fb950; }
+
+    .placeholder { font-size: 12px; color: var(--muted); }
+    .placeholder-light { font-size: 12px; color: #767676; }
+  </style>
+</head>
+<body>
+
+<h1>OSM Stats Builder</h1>
+<p class="sub">Activity heatmap &amp; edit badge for GitHub README</p>
+
+<div class="layout">
+
+  <!-- Sidebar: controls -->
+  <div class="sidebar">
+
+    <div class="card">
+      <div class="card-title">User</div>
+      <div class="radio-row">
+        <label><input type="radio" name="id_type" value="username" checked> Username</label>
+        <label><input type="radio" name="id_type" value="user_id"> User ID</label>
+      </div>
+      <input type="text" id="user_input" placeholder="e.g. SomeMapper" autocomplete="off">
+      <div class="err hidden" id="user_error">Enter a username or user ID</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Heatmap</div>
+
+      <div class="two field">
+        <div>
+          <label>Palette</label>
+          <select id="hm_palette">
+            <option value="green" selected>green</option>
+            <option value="blue">blue</option>
+            <option value="orange">orange</option>
+            <option value="purple">purple</option>
+            <option value="red">red</option>
+          </select>
+        </div>
+        <div>
+          <label>Theme</label>
+          <select id="hm_theme">
+            <option value="light" selected>light</option>
+            <option value="dark">dark</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="check-row"><input type="checkbox" id="hm_hide_title"> <label for="hm_hide_title">Hide title</label></div>
+      <div class="check-row"><input type="checkbox" id="hm_hide_legend"> <label for="hm_hide_legend">Hide legend</label></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Badge</div>
+
+      <div class="two field">
+        <div>
+          <label>Style</label>
+          <select id="style">
+            <option value="flat" selected>flat</option>
+            <option value="plastic">plastic</option>
+            <option value="for-the-badge">for-the-badge</option>
+          </select>
+        </div>
+        <div>
+          <label>Locale</label>
+          <select id="locale">
+            <option value="en" selected>en</option>
+            <option value="ru">ru</option>
+            <option value="kk">kk</option>
+            <option value="de">de</option>
+            <option value="fr">fr</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="check-row"><input type="checkbox" id="compact"> <label for="compact">Compact numbers &nbsp;<span style="color:var(--muted)">12.4k</span></label></div>
+      </div>
+
+      <div class="field">
+        <label>Label color</label>
+        <div class="color-row">
+          <input type="color" id="lc_picker" value="#555555">
+          <input type="text"  id="lc_text"   value="grey">
+        </div>
+        <div class="chips" data-for="lc_text" data-picker="lc_picker"></div>
+      </div>
+
+      <div class="field">
+        <label>Value color</label>
+        <div class="color-row">
+          <input type="color" id="vc_picker" value="#44cc11">
+          <input type="text"  id="vc_text"   value="brightgreen">
+        </div>
+        <div class="chips" data-for="vc_text" data-picker="vc_picker"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main: previews -->
+  <div class="content">
+
+    <!-- Heatmap hero -->
+    <div class="heatmap-card">
+      <div class="heatmap-preview" id="heatmap_preview">
+        <span class="placeholder-light">Enter a username to see the activity heatmap</span>
+      </div>
+      <div class="heatmap-outputs">
+        <div>
+          <div class="out-label">URL</div>
+          <div class="out-row">
+            <div class="out-code" id="hm_url">—</div>
+            <button class="copy" data-src="hm_url">Copy</button>
+          </div>
+        </div>
+        <div>
+          <div class="out-label">Markdown</div>
+          <div class="out-row">
+            <div class="out-code" id="hm_md">—</div>
+            <button class="copy" data-src="hm_md">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badge compact row -->
+    <div class="badge-card">
+      <div class="badge-preview" id="badge_preview">
+        <span class="placeholder">—</span>
+      </div>
+      <div class="badge-outputs">
+        <div>
+          <div class="out-label">Badge URL</div>
+          <div class="out-row">
+            <div class="out-code" id="b_url">—</div>
+            <button class="copy" data-src="b_url">Copy</button>
+          </div>
+        </div>
+        <div>
+          <div class="out-label">Badge Markdown</div>
+          <div class="out-row">
+            <div class="out-code" id="b_md">—</div>
+            <button class="copy" data-src="b_md">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const BASE = window.location.origin + '/osm';
+
+const PRESETS = {
+  brightgreen: '#44cc11', green: '#97ca00', yellow: '#dfb317',
+  orange: '#fe7d37', red: '#e05d44', blue: '#007ec6',
+  lightgrey: '#9f9f9f', grey: '#555555',
+};
+
+function expandHex(h) {
+  return h.length === 4 ? '#'+h[1]+h[1]+h[2]+h[2]+h[3]+h[3] : h;
+}
+function toPickerHex(v) {
+  v = v.trim().toLowerCase();
+  if (PRESETS[v]) return expandHex(PRESETS[v]);
+  if (/^#[0-9a-f]{3}$/.test(v)) return expandHex(v);
+  if (/^#[0-9a-f]{6}$/.test(v)) return v;
+  if (/^[0-9a-f]{3}$/.test(v))  return expandHex('#'+v);
+  if (/^[0-9a-f]{6}$/.test(v))  return '#'+v;
+  return '#555555';
+}
+
+// Color chips
+document.querySelectorAll('.chips').forEach(el => {
+  const textId = el.dataset.for, pickId = el.dataset.picker;
+  for (const [name, hex] of Object.entries(PRESETS)) {
+    const c = document.createElement('div');
+    c.className = 'chip';
+    c.style.background = hex;
+    c.title = name;
+    c.addEventListener('click', () => {
+      document.getElementById(textId).value = name;
+      document.getElementById(pickId).value = expandHex(hex);
+      el.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
+      c.classList.add('on');
+      schedule();
+    });
+    el.appendChild(c);
+  }
+  // Mark default active chip
+  const cur = document.getElementById(textId)?.value?.trim().toLowerCase();
+  el.querySelectorAll('.chip').forEach(c => { if (c.title === cur) c.classList.add('on'); });
+});
+
+// Picker <-> text sync
+[['lc_picker','lc_text'], ['vc_picker','vc_text']].forEach(([pickId, textId]) => {
+  document.getElementById(pickId).addEventListener('input', () => {
+    document.getElementById(textId).value = document.getElementById(pickId).value;
+    schedule();
+  });
+  document.getElementById(textId).addEventListener('input', () => {
+    document.getElementById(pickId).value = toPickerHex(document.getElementById(textId).value);
+    schedule();
+  });
+});
+
+// Watchers
+let _t;
+function schedule() { clearTimeout(_t); _t = setTimeout(update, 280); }
+
+['user_input','style','locale','hm_palette','hm_theme','lc_text','vc_text'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input',  schedule);
+  document.getElementById(id)?.addEventListener('change', schedule);
+});
+['compact','hm_hide_title','hm_hide_legend'].forEach(id =>
+  document.getElementById(id)?.addEventListener('change', schedule)
+);
+document.querySelectorAll('input[name="id_type"]').forEach(r =>
+  r.addEventListener('change', () => {
+    const t = document.querySelector('input[name="id_type"]:checked').value;
+    document.getElementById('user_input').placeholder = t === 'username' ? 'e.g. SomeMapper' : 'e.g. 123456';
+    schedule();
+  })
+);
+
+function heatmapParams() {
+  const type = document.querySelector('input[name="id_type"]:checked').value;
+  const user = document.getElementById('user_input').value.trim();
+  if (!user) return null;
+  const p = new URLSearchParams();
+  p.set(type, user);
+  const pal = document.getElementById('hm_palette').value;
+  const thm = document.getElementById('hm_theme').value;
+  if (pal !== 'green') p.set('palette', pal);
+  if (thm !== 'light') p.set('theme', thm);
+  if (document.getElementById('hm_hide_title').checked)  p.set('hide_title', 'true');
+  if (document.getElementById('hm_hide_legend').checked) p.set('hide_legend', 'true');
+  return p;
+}
+
+function badgeParams() {
+  const type = document.querySelector('input[name="id_type"]:checked').value;
+  const user = document.getElementById('user_input').value.trim();
+  if (!user) return null;
+  const p = new URLSearchParams();
+  p.set(type, user);
+  const style = document.getElementById('style').value;
+  const locale = document.getElementById('locale').value;
+  const lc = document.getElementById('lc_text').value.trim();
+  const vc = document.getElementById('vc_text').value.trim();
+  if (style  !== 'flat')         p.set('style', style);
+  if (locale !== 'en')           p.set('locale', locale);
+  if (document.getElementById('compact').checked) p.set('compact', 'true');
+  if (lc && lc !== 'grey')       p.set('label_color', lc);
+  if (vc && vc !== 'brightgreen') p.set('color', vc);
+  return p;
+}
+
+function setImg(boxId, src, alt) {
+  const box = document.getElementById(boxId);
+  const img = new Image();
+  img.alt = alt;
+  img.style.maxWidth = '100%';
+  img.style.display  = 'block';
+  img.src = src;
+  box.innerHTML = '';
+  box.appendChild(img);
+}
+
+function setText(id, val) {
+  document.getElementById(id).textContent = val || '—';
+}
+
+function update() {
+  const hp = heatmapParams();
+  const bp = badgeParams();
+  const errEl = document.getElementById('user_error');
+
+  if (!hp) {
+    errEl.classList.remove('hidden');
+    document.getElementById('heatmap_preview').innerHTML =
+      '<span class="placeholder-light">Enter a username to see the activity heatmap</span>';
+    document.getElementById('badge_preview').innerHTML = '<span class="placeholder">—</span>';
+    ['hm_url','hm_md','b_url','b_md'].forEach(id => setText(id, '—'));
+    return;
+  }
+  errEl.classList.add('hidden');
+
+  const hUrl = `${BASE}/heatmap?${hp}`;
+  const bUrl = bp ? `${BASE}/badge?${bp}` : null;
+
+  setImg('heatmap_preview', hUrl, 'OSM Activity Heatmap');
+  setText('hm_url', hUrl);
+  setText('hm_md', `![OSM Activity Heatmap](${hUrl})`);
+
+  if (bUrl) {
+    setImg('badge_preview', bUrl, 'OSM Badge');
+    setText('b_url', bUrl);
+    setText('b_md', `![OSM Edits](${bUrl})`);
+  }
+}
+
+// Copy
+document.querySelectorAll('.copy').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const text = document.getElementById(btn.dataset.src)?.textContent?.trim();
+    if (!text || text === '—') return;
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const ta = Object.assign(document.createElement('textarea'), { value: text, style: 'position:fixed;opacity:0' });
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    }
+    btn.textContent = 'Copied!'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1800);
+  });
+});
+</script>
+</body>
+</html>
