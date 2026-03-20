@@ -2,9 +2,9 @@
 
 Generate SVG badges and activity heatmaps from your [OpenStreetMap](https://openstreetmap.org) editing history — designed to drop into a GitHub Profile README.
 
-**License:** [AGPL-3.0-only](https://www.gnu.org/licenses/agpl-3.0.html)
-**Base URL:** `https://api.anmitali.dev/osm`
-**Sandbox:** `https://api.anmitali.dev/osm/sandbox`
+**License:** [AGPL-3.0-only](https://www.gnu.org/licenses/agpl-3.0.html)\
+**Base URL:** https://api.anmitali.dev/osm \
+**Sandbox:** https://api.anmitali.dev/osm/sandbox
 
 ---
 
