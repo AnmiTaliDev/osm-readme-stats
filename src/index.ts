@@ -49,7 +49,7 @@ async function resolveUser(q: Record<string, string>) {
 }
 
 /**
- * GET /osm/badge
+ * GET /badge
  *
  * Returns a shields.io-compatible SVG badge with the OSM edit count.
  *
@@ -63,7 +63,7 @@ async function resolveUser(q: Record<string, string>) {
  *   compact     – true → abbreviate numbers (12.4k)
  *   locale      – en | ru | kk | de | fr  (default: en)
  */
-app.get('/osm/badge', async (c) => {
+app.get('/badge', async (c) => {
   const q = c.req.query();
 
   const styleRaw = q['style']?.trim() ?? 'flat';
@@ -118,7 +118,7 @@ app.get('/osm/badge', async (c) => {
       'Cache-Control': BADGE_CACHE,
     });
   } catch (err) {
-    console.error('[/osm/badge]', err);
+    console.error('[/badge]', err);
     return c.body(generateErrorBadge('osm api error', style), 502, {
       'Content-Type': 'image/svg+xml',
       'Cache-Control': NO_CACHE,
@@ -127,7 +127,7 @@ app.get('/osm/badge', async (c) => {
 });
 
 /**
- * GET /osm/heatmap
+ * GET /heatmap
  *
  * Returns an SVG activity heatmap for the last 52 weeks.
  *
@@ -139,7 +139,7 @@ app.get('/osm/badge', async (c) => {
  *   hide_title   – true → omit the stats title line
  *   hide_legend  – true → omit the Less/More legend
  */
-app.get('/osm/heatmap', async (c) => {
+app.get('/heatmap', async (c) => {
   const q = c.req.query();
 
   const paletteRaw = q['palette']?.trim() ?? 'green';
@@ -200,7 +200,7 @@ app.get('/osm/heatmap', async (c) => {
       'Cache-Control': BADGE_CACHE,
     });
   } catch (err) {
-    console.error('[/osm/heatmap]', err);
+    console.error('[/heatmap]', err);
     return c.body(generateErrorBadge('osm api error'), 502, {
       'Content-Type': 'image/svg+xml',
       'Cache-Control': NO_CACHE,
@@ -209,7 +209,7 @@ app.get('/osm/heatmap', async (c) => {
 });
 
 /**
- * GET /osm/status
+ * GET /status
  *
  * Health-check. Always returns HTTP 200; inspect the JSON body for service state.
  *
@@ -221,7 +221,7 @@ app.get('/osm/heatmap', async (c) => {
  *   version: "<semver>"
  * }
  */
-app.get('/osm/status', async (c) => {
+app.get('/status', async (c) => {
   const [osmApi, osmChangesets] = await Promise.all([
     checkOsmApiStatus(),
     checkOsmChangesetsStatus(),
@@ -236,17 +236,16 @@ app.get('/osm/status', async (c) => {
 });
 
 /**
- * GET /osm/sandbox
+ * GET /sandbox
  *
  * Interactive badge/heatmap builder. Served via Cloudflare Assets binding.
  */
-app.get('/osm/sandbox', async (c) => {
+app.get('/sandbox', async (c) => {
   const url = new URL(c.req.url);
   url.pathname = '/sandbox.html';
   return c.env.ASSETS.fetch(new Request(url.toString(), c.req.raw));
 });
 
-app.get('/osm', (c) => c.redirect('/osm/sandbox', 302));
-app.get('/osm/', (c) => c.redirect('/osm/sandbox', 302));
+app.get('/', (c) => c.redirect('/sandbox', 302));
 
 export default app;

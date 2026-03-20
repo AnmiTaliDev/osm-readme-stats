@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 enabled = true
 
 [[routes]]
-pattern = "api.anmitali.dev/osm/*"
+pattern = "osmapi.anmitali.dev/*"
 zone_name = "anmitali.dev"
 
 [assets]

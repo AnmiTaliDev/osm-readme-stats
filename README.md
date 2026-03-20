@@ -3,8 +3,8 @@
 Generate SVG badges and activity heatmaps from your [OpenStreetMap](https://openstreetmap.org) editing history — designed to drop into a GitHub Profile README.
 
 **License:** [AGPL-3.0-only](https://www.gnu.org/licenses/agpl-3.0.html)\
-**Base URL:** https://api.anmitali.dev/osm \
-**Sandbox:** https://api.anmitali.dev/osm/sandbox
+**Base URL:** `https://osmapi.anmitali.dev`\
+**Sandbox:** `https://osmapi.anmitali.dev/sandbox`
 
 ---
 
@@ -12,20 +12,20 @@ Generate SVG badges and activity heatmaps from your [OpenStreetMap](https://open
 
 ```markdown
 <!-- Badge by username -->
-![OSM Edits](https://api.anmitali.dev/osm/badge?username=YourUsername)
+![OSM Edits](https://osmapi.anmitali.dev/badge?username=YourUsername)
 
 <!-- Badge by user ID -->
-![OSM Edits](https://api.anmitali.dev/osm/badge?user_id=123456)
+![OSM Edits](https://osmapi.anmitali.dev/badge?user_id=123456)
 
 <!-- Activity heatmap -->
-![OSM Heatmap](https://api.anmitali.dev/osm/heatmap?username=YourUsername)
+![OSM Heatmap](https://osmapi.anmitali.dev/heatmap?username=YourUsername)
 ```
 
 ---
 
 ## Endpoints
 
-### `GET /osm/badge`
+### `GET /badge`
 
 Returns an `image/svg+xml` shields.io-compatible badge with the total changeset count.
 
@@ -49,15 +49,15 @@ Any 3- or 6-digit hex value is also accepted (without `#`).
 #### Examples
 
 ```markdown
-![OSM Edits](https://api.anmitali.dev/osm/badge?username=SomeMapper)
-![OSM Edits](https://api.anmitali.dev/osm/badge?username=SomeMapper&style=plastic&compact=true)
-![OSM Правки](https://api.anmitali.dev/osm/badge?username=SomeMapper&style=for-the-badge&locale=ru)
-![OSM Edits](https://api.anmitali.dev/osm/badge?username=SomeMapper&label_color=007ec6&color=fe7d37)
+![OSM Edits](https://osmapi.anmitali.dev/badge?username=SomeMapper)
+![OSM Edits](https://osmapi.anmitali.dev/badge?username=SomeMapper&style=plastic&compact=true)
+![OSM Правки](https://osmapi.anmitali.dev/badge?username=SomeMapper&style=for-the-badge&locale=ru)
+![OSM Edits](https://osmapi.anmitali.dev/badge?username=SomeMapper&label_color=007ec6&color=fe7d37)
 ```
 
 ---
 
-### `GET /osm/heatmap`
+### `GET /heatmap`
 
 Returns an `image/svg+xml` activity heatmap for the past year (53 weeks × 7 days), styled after GitHub's contribution graph. Changeset data is fetched in parallel monthly windows so even very active mappers are covered correctly.
 
@@ -73,14 +73,14 @@ Returns an `image/svg+xml` activity heatmap for the past year (53 weeks × 7 day
 #### Examples
 
 ```markdown
-![OSM Heatmap](https://api.anmitali.dev/osm/heatmap?username=SomeMapper)
-![OSM Heatmap](https://api.anmitali.dev/osm/heatmap?username=SomeMapper&palette=blue&theme=dark)
-![OSM Heatmap](https://api.anmitali.dev/osm/heatmap?username=SomeMapper&hide_legend=true)
+![OSM Heatmap](https://osmapi.anmitali.dev/heatmap?username=SomeMapper)
+![OSM Heatmap](https://osmapi.anmitali.dev/heatmap?username=SomeMapper&palette=blue&theme=dark)
+![OSM Heatmap](https://osmapi.anmitali.dev/heatmap?username=SomeMapper&hide_legend=true)
 ```
 
 ---
 
-### `GET /osm/status`
+### `GET /status`
 
 Health-check. Always returns HTTP 200; inspect the JSON body for service state.
 
@@ -100,7 +100,7 @@ Health-check. Always returns HTTP 200; inspect the JSON body for service state.
 
 ---
 
-### `GET /osm/sandbox`
+### `GET /sandbox`
 
 Interactive builder — live preview of both heatmap and badge, copy-ready Markdown snippets.
 
